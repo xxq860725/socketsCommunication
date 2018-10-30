@@ -18,7 +18,6 @@ namespace Sockets
    *唯一标识：992c865f-bbcb-4dd5-b141-86542d86677e
    *当前的用户域：WIN-OCE2SQ21FJO
    *创建人：  LeftYux
-   *电子邮箱：87717663@qq.com
    *创建时间：2018-10-30 17:31:59
    *描述：
    *
