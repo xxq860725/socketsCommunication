@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace Sockets
 {
@@ -17,6 +18,7 @@ namespace Sockets
         /// <param name="ipAddress">ip终结点</param>
         /// <param name="port">端口</param>
         public abstract void InitSocket(IPAddress ipAddress, int port);
+
         public abstract void InitSocket(string ipAddress, int port);
 
         /// <summary>
@@ -28,5 +30,7 @@ namespace Sockets
         /// Sockdet停止方法
         /// </summary>
         public abstract void Stop();
+
+      
     }
 }
