@@ -1,0 +1,5 @@
+G:\.My_SiginProject\.socketsCommunication\socketsCommunication\ClientConnOpcServer\bin\Debug\ClientConnOpcServer.dll
+G:\.My_SiginProject\.socketsCommunication\socketsCommunication\ClientConnOpcServer\bin\Debug\ClientConnOpcServer.pdb
+G:\.My_SiginProject\.socketsCommunication\socketsCommunication\ClientConnOpcServer\obj\Debug\ClientConnOpcServer.csprojResolveAssemblyReference.cache
+G:\.My_SiginProject\.socketsCommunication\socketsCommunication\ClientConnOpcServer\obj\Debug\ClientConnOpcServer.dll
+G:\.My_SiginProject\.socketsCommunication\socketsCommunication\ClientConnOpcServer\obj\Debug\ClientConnOpcServer.pdb
