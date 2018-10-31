@@ -50,7 +50,7 @@ namespace Sockets
         /// <summary>
         /// 客户端主通信程序
         /// </summary>
-        public Socket Client { get; set; }
+        public TcpClient Client { get; set; }
         /// <summary>
         /// 承载客户端Socket的网络流
         /// </summary>
@@ -85,7 +85,7 @@ namespace Sockets
         /// <param name="ip">ip节点</param>
         /// <param name="client">TCPClient客户端</param>
         /// <param name="ns">NetworkStream </param>
-        public tempSockets(IPEndPoint ip, Socket client, NetworkStream ns)
+        public tempSockets(IPEndPoint ip, TcpClient client, NetworkStream ns)
         {
             this.Ip = ip;
             this.Client = client;
