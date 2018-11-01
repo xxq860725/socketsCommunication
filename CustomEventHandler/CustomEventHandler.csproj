@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4266BDCD-A6E7-49D7-883F-99458ABCB763}</ProjectGuid>
+    <ProjectGuid>{69D15270-FA16-4F60-8F88-9CAD8D48D086}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Sockets</RootNamespace>
-    <AssemblyName>Sockets</AssemblyName>
+    <RootNamespace>CustomEventHandler</RootNamespace>
+    <AssemblyName>CustomEventHandler</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -39,13 +39,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="abstractSockets.cs" />
-    <Compile Include="InterfaceSocket\IClientSend.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SocketCoreServer.cs" />
-    <Compile Include="TempSocket\tempSockets.cs" />
+    <Compile Include="_CustomEventHandler.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\EntityModel\EntityModel.csproj">
+      <Project>{001c4de0-e60a-4b37-a405-d08f1e9cf074}</Project>
+      <Name>EntityModel</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

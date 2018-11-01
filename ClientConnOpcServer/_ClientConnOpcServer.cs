@@ -4,6 +4,7 @@ using OPCAutomation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 
@@ -20,29 +21,16 @@ namespace ClientConnOpcServer
     *当前的用户域：WIN-OCE2SQ21FJO
     *创建人：  LeftYux
     *创建时间：2018-10-31 10:24:46
-
     *描述：利用Interop.OPCAutomation DLL连接opc服务器
-    *
     *=====================================================================*/
 
-    public  class _ClientConnOpcServer
+    public class _ClientConnOpcServer
     {
 
-        private OPCItems opcItems;//客户端的id+键
-        private OPCItem opcItem;
-        private OPCGroups opcGroups;
-        private OPCGroup opcGroup;
-        private List<string> nodeName = new List<string>();
-        private Dictionary<string, string> nodeValues = new Dictionary<string, string>();
-        private List<int> itemHandleClient = new List<int>();
-        private List<int> itemHandleServer = new List<int>();//服务端id
-       
-
-        public delegate void TelegramRecievedEventHandler(Dictionary<string,string> resultList);//调用需要注册的事件
-        public event TelegramRecievedEventHandler TelegrammRecieved;
-
-
-        private SynchronizationContext context;
+        /// <summary>
+        /// 实例化事件
+        /// </summary>
+        public event CustomEventHandler._CustomEventHandler.TelegramRecievedEventHandler TelegrammRecieved;
 
         /// <summary>
         /// 构造函数,调用SynchronizationContext.Current
@@ -60,9 +48,9 @@ namespace ClientConnOpcServer
         /// <returns>自定义返回集合</returns>
         public Result<OPCServer> CreateConnection(string OpcHostName, string OpcHostIP)
         {
-            return CreateConnection(OpcHostName, OpcHostIP,5000);
+            return CreateConnection(OpcHostName, OpcHostIP, 5000);
         }
-            
+
         /// <summary>
         /// 创建连接Opc
         /// </summary>
@@ -76,25 +64,25 @@ namespace ClientConnOpcServer
             Result<OPCServer> result = new Result<OPCServer>();
             ManualResetEvent connectDone = new ManualResetEvent(false);
             StateObject state = new StateObject();
-           
+
             try
             {
-               opc = new OPCServer();
+                opc = new OPCServer();
             }
             catch (Exception ex)
             {
                 result.IsSuccess = false;
-                result.Message = ex.Message +"初始化Opc服务器异常!";
+                result.Message = ex.Message + "初始化Opc服务器异常!";
                 return result;
             }
             OperTimeOut tempTimeOut = new OperTimeOut()
             {
                 WorkOPc = opc,
-                DelayTime =timeOut,
-                StartTime =DateTime.Now,
+                DelayTime = timeOut,
+                StartTime = DateTime.Now,
             };
             //开启线程验证连接是否超时
-            ThreadPool.QueueUserWorkItem(new WaitCallback(VaildateTimeOut),tempTimeOut);
+            ThreadPool.QueueUserWorkItem(new WaitCallback(VaildateTimeOut), tempTimeOut);
 
             try
             {
@@ -103,7 +91,7 @@ namespace ClientConnOpcServer
                 state.Ip = OpcHostIP;
                 state.Name = OpcHostName;
                 ThreadPool.QueueUserWorkItem(new WaitCallback(ThradConnecedOpc), state);
-                
+
             }
             catch (Exception ex)
             {
@@ -117,8 +105,8 @@ namespace ClientConnOpcServer
             connectDone.Close();
             tempTimeOut.IsSuccessful = true;
             //如果开启线程发生了异常
-            if (state.IsError) 
-            { 
+            if (state.IsError)
+            {
                 result.Message = state.ErrerMsg;
                 result.IsSuccess = false;
                 if (opc != null) { opc.Disconnect(); }
@@ -142,7 +130,7 @@ namespace ClientConnOpcServer
         /// <param name="opc">刷新率</param>
         public Result AddConnectionPoint(IList<string> Elements, OPCServer opc, int refreshRate)
         {
-            if (Elements == null) { return Result.CreateSuccessResult();}
+            if (Elements == null) { return Result.CreateSuccessResult(); }
             Result result = new Result();
             if (opc == null) { result.IsSuccess = false; result.Message = "当前Opc对象为null"; return result; }
 
@@ -153,15 +141,58 @@ namespace ClientConnOpcServer
             return result;
         }
 
-         /// <summary>
-         /// 订阅事件
-         /// </summary>
-         /// <param name="TransactionID"></param>
-         /// <param name="NumItems"></param>
-         /// <param name="ClientHandles"></param>
-         /// <param name="ItemValues"></param>
-         /// <param name="Qualities"></param>
-         /// <param name="TimeStamps"></param>
+        /// <summary>
+        /// 关闭opc并释放连接
+        /// </summary>
+        /// <param name="opc">当前实例的opc对象</param>
+        public void CloseOpcServer(OPCServer opc)
+        {
+            //移除添加的所有元素
+            opc.OPCGroups.RemoveAll();
+            opc.Disconnect();
+        }
+
+        /// <summary>
+        /// 获取本地服务ip和名称
+        /// </summary>
+        /// <returns>数组</returns>
+        public string[] GetLoccalIpAndHostName()
+        {
+            OPCServer gim = new OPCServer();
+            string[] arr = new string[2] { "", "" };
+            string strHostIP, strHostName;
+            IPHostEntry IPHost = Dns.Resolve(Environment.MachineName);
+            if (IPHost.AddressList.Length > 0)
+            {
+                strHostIP = IPHost.AddressList[0].ToString();
+            }
+            else
+            {
+                return arr;
+            }
+
+            IPHostEntry ipHostEntry = Dns.GetHostByAddress(strHostIP);
+            strHostName = ipHostEntry.HostName.ToString();
+            object serverList = gim.GetOPCServers(strHostName);
+
+            foreach (string turn in (Array)serverList)
+            {
+                strHostName = turn;
+            }
+            arr[0] = strHostIP;
+            arr[1] = strHostName;
+            return arr;
+        }
+
+        /// <summary>
+        /// 订阅事件
+        /// </summary>
+        /// <param name="TransactionID"></param>
+        /// <param name="NumItems"></param>
+        /// <param name="ClientHandles"></param>
+        /// <param name="ItemValues"></param>
+        /// <param name="Qualities"></param>
+        /// <param name="TimeStamps"></param>
         void opcGroup_DataChange(int TransactionID, int NumItems, ref Array ClientHandles, ref Array ItemValues, ref Array Qualities, ref Array TimeStamps)
         {
             int len;
@@ -195,7 +226,7 @@ namespace ClientConnOpcServer
                 opcGroup.IsActive = true;
                 opcGroup.DeadBand = 0;
                 //设置刷新率
-                opcGroup.UpdateRate = 200;
+                opcGroup.UpdateRate = refreshRate;
                 //是否订阅
                 opcGroup.IsSubscribed = true;
                 opcItems = opcGroup.OPCItems;
@@ -206,6 +237,7 @@ namespace ClientConnOpcServer
                 #region 添加节点
                 state.WaitDone = connectDone;
                 state.tempList = Elements;
+                //开启一个线程去添加节点元素
                 ThreadPool.QueueUserWorkItem(new WaitCallback(ThreadAddNodeElements), state);
                 connectDone.WaitOne();
                 connectDone.Close();
@@ -229,24 +261,15 @@ namespace ClientConnOpcServer
             return result;
         }
 
-        /// <summary>
-        /// 关闭opc并释放连接
-        /// </summary>
-        /// <param name="opc">当前实例的opc对象</param>
-        public void CloseOpcServer(OPCServer opc)
-        {
-            opc.OPCGroups.RemoveAll();
-            opc.Disconnect();
-        }
 
-        #region 辅助线程的回调函数和私有函数
+        #region 辅助线程的回调函数和私有函数以及私有变量
         /// <summary>
         /// 线程池验证超时的回调函数
         /// </summary>
         /// <param name="ir">异步操作的对象</param>
         private void VaildateTimeOut(object obj)
         {
-             OperTimeOut tempObj = obj as OperTimeOut;
+            OperTimeOut tempObj = obj as OperTimeOut;
             if (tempObj != null)
             {
                 while (!tempObj.IsSuccessful)
@@ -287,7 +310,7 @@ namespace ClientConnOpcServer
                 catch (Exception ex)
                 {
                     st.IsError = true;
-                    st.ErrerMsg = ex.Message+",由于超时导致关闭时释放了opc对象导致连接失败!";
+                    st.ErrerMsg = ex.Message + ",由于超时导致关闭时释放了opc对象导致连接失败!";
                     st.OpcStatus = false;
                     st.WaitDone.Set();
                 }
@@ -326,7 +349,16 @@ namespace ClientConnOpcServer
             }
         }
 
-      
+        private SynchronizationContext context;
+        private OPCItems opcItems;//客户端的id+键
+        private OPCItem opcItem;
+        private OPCGroups opcGroups;
+        private OPCGroup opcGroup;
+        private List<string> nodeName = new List<string>();
+        private Dictionary<string, string> nodeValues = new Dictionary<string, string>();
+        private List<int> itemHandleClient = new List<int>();
+        private List<int> itemHandleServer = new List<int>();//服务端id
+
         #endregion
 
 
