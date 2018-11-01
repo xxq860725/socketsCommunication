@@ -15,6 +15,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core.OpcServerConnection", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientConnOpcServer", "ClientConnOpcServer\ClientConnOpcServer.csproj", "{19C786DC-CA10-46F2-B255-D9E1A0DEF76F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core.Entity", "Core.Entity", "{8FEA448C-7ACC-46A9-A1FB-FDFD2C7402FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityModel", "EntityModel\EntityModel.csproj", "{001C4DE0-E60A-4B37-A405-D08F1E9CF074}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFormsApplication", "WindowsFormsApplication\WindowsFormsApplication.csproj", "{1CAD3E24-0DB7-4DE4-8EA8-772B0A49F1BE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +43,14 @@ Global
 		{19C786DC-CA10-46F2-B255-D9E1A0DEF76F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{19C786DC-CA10-46F2-B255-D9E1A0DEF76F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{19C786DC-CA10-46F2-B255-D9E1A0DEF76F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{001C4DE0-E60A-4B37-A405-D08F1E9CF074}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{001C4DE0-E60A-4B37-A405-D08F1E9CF074}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{001C4DE0-E60A-4B37-A405-D08F1E9CF074}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{001C4DE0-E60A-4B37-A405-D08F1E9CF074}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CAD3E24-0DB7-4DE4-8EA8-772B0A49F1BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CAD3E24-0DB7-4DE4-8EA8-772B0A49F1BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CAD3E24-0DB7-4DE4-8EA8-772B0A49F1BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CAD3E24-0DB7-4DE4-8EA8-772B0A49F1BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,5 +60,6 @@ Global
 		{0A51CCA3-D2FC-4100-AD95-0935A53FFB7B} = {D9668F86-1E87-40E7-9AF9-623206A32129}
 		{F2F41274-B5A8-4961-9369-F5F6EE27A7CD} = {D9668F86-1E87-40E7-9AF9-623206A32129}
 		{19C786DC-CA10-46F2-B255-D9E1A0DEF76F} = {2C24BD10-533E-41C4-9529-80A77CA569F6}
+		{001C4DE0-E60A-4B37-A405-D08F1E9CF074} = {8FEA448C-7ACC-46A9-A1FB-FDFD2C7402FC}
 	EndGlobalSection
 EndGlobal

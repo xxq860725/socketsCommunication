@@ -25,23 +25,32 @@ namespace ClientConnOpcServer
     *
     *=====================================================================*/
 
-    public delegate void PullOpcData();
     public  class _ClientConnOpcServer
     {
+
         private OPCItems opcItems;//客户端的id+键
         private OPCItem opcItem;
         private OPCGroups opcGroups;
         private OPCGroup opcGroup;
         private List<string> nodeName = new List<string>();
-        public Dictionary<string, string> nodeValues = new Dictionary<string, string>();
+        private Dictionary<string, string> nodeValues = new Dictionary<string, string>();
         private List<int> itemHandleClient = new List<int>();
         private List<int> itemHandleServer = new List<int>();//服务端id
-        public event PullOpcData Pull;
+       
+
+        public delegate void TelegramRecievedEventHandler(Dictionary<string,string> resultList);//调用需要注册的事件
+        public event TelegramRecievedEventHandler TelegrammRecieved;
+
+
+        private SynchronizationContext context;
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数,调用SynchronizationContext.Current
         /// </summary>      
-        public _ClientConnOpcServer() { }
+        public _ClientConnOpcServer(SynchronizationContext context)
+        {
+            this.context = context;
+        }
 
         /// <summary>
         /// 创建连接Opc,默认连接超时5秒钟
@@ -63,10 +72,11 @@ namespace ClientConnOpcServer
         /// <returns>自定义返回集合</returns>
         public Result<OPCServer> CreateConnection(string OpcHostName, string OpcHostIP, int timeOut)
         {
+            OPCServer opc = null;
             Result<OPCServer> result = new Result<OPCServer>();
             ManualResetEvent connectDone = new ManualResetEvent(false);
             StateObject state = new StateObject();
-            OPCServer opc = null;
+           
             try
             {
                opc = new OPCServer();
@@ -80,18 +90,20 @@ namespace ClientConnOpcServer
             OperTimeOut tempTimeOut = new OperTimeOut()
             {
                 WorkOPc = opc,
-                DelayTime =timeOut
+                DelayTime =timeOut,
+                StartTime =DateTime.Now,
             };
             //开启线程验证连接是否超时
             ThreadPool.QueueUserWorkItem(new WaitCallback(VaildateTimeOut),tempTimeOut);
 
             try
             {
-                state.WorkOpc =opc;
-                state.WaitDone =connectDone;
+                state.WorkOpc = opc;
+                state.WaitDone = connectDone;
                 state.Ip = OpcHostIP;
                 state.Name = OpcHostName;
                 ThreadPool.QueueUserWorkItem(new WaitCallback(ThradConnecedOpc), state);
+                
             }
             catch (Exception ex)
             {
@@ -108,6 +120,7 @@ namespace ClientConnOpcServer
             if (state.IsError) 
             { 
                 result.Message = state.ErrerMsg;
+                result.IsSuccess = false;
                 if (opc != null) { opc.Disconnect(); }
             }
             if (state.OpcStatus)
@@ -132,28 +145,100 @@ namespace ClientConnOpcServer
             if (Elements == null) { return Result.CreateSuccessResult();}
             Result result = new Result();
             if (opc == null) { result.IsSuccess = false; result.Message = "当前Opc对象为null"; return result; }
+
             //创建组并注册事件
-            Result temp = settingsGroupAndpushElements(Elements, opc, refreshRate);
+            Result temp = settingsGroupAndElements(Elements, opc, refreshRate);
             result.IsSuccess = temp.IsSuccess;
             result.Message = temp.Message;
-           
             return result;
         }
 
-        private Dictionary<string, string> ClientConnOpcServer_Pull()
-        {
-            return nodeValues;
-        }
-
+         /// <summary>
+         /// 订阅事件
+         /// </summary>
+         /// <param name="TransactionID"></param>
+         /// <param name="NumItems"></param>
+         /// <param name="ClientHandles"></param>
+         /// <param name="ItemValues"></param>
+         /// <param name="Qualities"></param>
+         /// <param name="TimeStamps"></param>
         void opcGroup_DataChange(int TransactionID, int NumItems, ref Array ClientHandles, ref Array ItemValues, ref Array Qualities, ref Array TimeStamps)
         {
+            int len;
             for (int i = 1; i <= NumItems; i++)
             {
                 nodeValues[nodeName[Convert.ToInt32(ClientHandles.GetValue(i)) - 1]] = ItemValues.GetValue(i).ToString();
             }
+            len = nodeValues.Count;
+            if (TelegrammRecieved != null && len > 0)
+                context.Post(delegate { TelegrammRecieved(nodeValues); }, null);
         }
 
-      
+        /// <summary>
+        /// 设置Opc组和添加元素
+        /// </summary>
+        /// <param name="opc">当前操作的opc对象</param>
+        /// <param name="refreshRate">刷新率</param>
+        private Result settingsGroupAndElements(IList<string> Elements, OPCServer opc, int refreshRate)
+        {
+            Result result = new Result();
+            ManualResetEvent connectDone = new ManualResetEvent(false);
+            StateObject state = new StateObject();
+            try
+            {
+                #region 设置组
+                opcGroups = opc.OPCGroups;
+                opcGroup = opcGroups.Add("DefaultGroup");
+                opc.OPCGroups.DefaultGroupIsActive = true;
+                opc.OPCGroups.DefaultGroupDeadband = 0;
+                //是否激活
+                opcGroup.IsActive = true;
+                opcGroup.DeadBand = 0;
+                //设置刷新率
+                opcGroup.UpdateRate = 200;
+                //是否订阅
+                opcGroup.IsSubscribed = true;
+                opcItems = opcGroup.OPCItems;
+                //注册事件
+                opcGroup.DataChange += new DIOPCGroupEvent_DataChangeEventHandler(opcGroup_DataChange);//注册读取事件 
+                #endregion
+
+                #region 添加节点
+                state.WaitDone = connectDone;
+                state.tempList = Elements;
+                ThreadPool.QueueUserWorkItem(new WaitCallback(ThreadAddNodeElements), state);
+                connectDone.WaitOne();
+                connectDone.Close();
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                result.Message = ex.Message + ",创建组失败!";
+                result.IsSuccess = false;
+                return result;
+            }
+
+            if (state.IsError)
+            {
+                result.IsSuccess = false;
+                result.Message = state.ErrerMsg + ",添加元素到服务器失败!";
+                return result;
+            }
+            result.IsSuccess = true;
+            result.Message = "创建组并且添加元素成功!";
+            return result;
+        }
+
+        /// <summary>
+        /// 关闭opc并释放连接
+        /// </summary>
+        /// <param name="opc">当前实例的opc对象</param>
+        public void CloseOpcServer(OPCServer opc)
+        {
+            opc.OPCGroups.RemoveAll();
+            opc.Disconnect();
+        }
+
         #region 辅助线程的回调函数和私有函数
         /// <summary>
         /// 线程池验证超时的回调函数
@@ -161,7 +246,7 @@ namespace ClientConnOpcServer
         /// <param name="ir">异步操作的对象</param>
         private void VaildateTimeOut(object obj)
         {
-            OperTimeOut tempObj = obj as OperTimeOut;
+             OperTimeOut tempObj = obj as OperTimeOut;
             if (tempObj != null)
             {
                 while (!tempObj.IsSuccessful)
@@ -202,7 +287,7 @@ namespace ClientConnOpcServer
                 catch (Exception ex)
                 {
                     st.IsError = true;
-                    st.ErrerMsg = ex.Message;
+                    st.ErrerMsg = ex.Message+",由于超时导致关闭时释放了opc对象导致连接失败!";
                     st.OpcStatus = false;
                     st.WaitDone.Set();
                 }
@@ -241,53 +326,9 @@ namespace ClientConnOpcServer
             }
         }
 
-        /// <summary>
-        /// 设置Opc组和添加元素
-        /// </summary>
-        /// <param name="opc">当前操作的opc对象</param>
-        /// <param name="refreshRate">刷新率</param>
-        private Result settingsGroupAndpushElements(IList<string> Elements, OPCServer opc, int refreshRate)
-        {
-            Result result = new Result();
-            ManualResetEvent connectDone = new ManualResetEvent(false);
-            StateObject state = new StateObject();
-            try
-            {
-                opcGroups = opc.OPCGroups;
-                opcGroup = opcGroups.Add("Default Group");
-                opc.OPCGroups.DefaultGroupIsActive = true;
-                opc.OPCGroups.DefaultGroupDeadband = 0;
-                opcGroup.IsActive = true;
-                opcGroup.DeadBand = 0;
-                opcGroup.UpdateRate = refreshRate;//设置刷新率
-                opcItems = opcGroup.OPCItems;
-                opcGroup.DataChange += opcGroup_DataChange;//注册读取事件
-
-                #region 添加节点
-                state.WaitDone = connectDone;
-                state.tempList = Elements;
-                ThreadPool.QueueUserWorkItem(new WaitCallback(ThreadAddNodeElements), state);
-                connectDone.WaitOne();
-                connectDone.Close();
-                #endregion
-            }
-            catch (Exception ex)
-            {
-                result.Message = ex.Message + ",创建组失败!";
-                result.IsSuccess = false;
-                return result;
-            }
-
-            if (state.IsError)
-            {
-                result.IsSuccess = false;
-                result.Message = state.ErrerMsg + ",添加元素到服务器失败!";
-                return result;
-            }
-            result.IsSuccess = true;
-            result.Message = "创建组并且添加元素成功!";
-            return result;
-        }
+      
         #endregion
+
+
     }
 }
