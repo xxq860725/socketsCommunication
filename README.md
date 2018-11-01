@@ -1,10 +1,12 @@
 # socketsCommunication
-tcpClient和TcpListenerTcp通信
-opc客户端采集服务端的数据（新增）
 
-<<<<<<< HEAD
-借鉴https://github.com/dathlin  其中的一些思路，非常厉害的一位大佬，喜欢可以Follow或者打赏
+实现opc客户端
+使用Core.DLL下面的Interop.OPCAutomation.dll动态库
+使用之前需要注册类opcdaauto.dll
+1、分别将opcdaauto.dll放入C：\windows\system32和C：\windows\system64
+2、dll目录下面注册 regsvr32 opcdaauto.dll即可使用
+
 =======
 其中部分参考 https://github.com/dathlin 的一些思路
-非常厉害的一位大佬，喜欢可以Follow或者打赏一下
->>>>>>> 47c52467112160f611d4517a97b7706b640cf110
+非常厉害的一位大佬，喜欢可以Follow或者打赏一下 0.0
+
